@@ -1,3 +1,7 @@
+# 本 Fork 目的
+
+改造 Grid 组件支持 sticky rows/columns
+
 # react-window
 
 > React components for efficiently rendering large lists and tabular data
