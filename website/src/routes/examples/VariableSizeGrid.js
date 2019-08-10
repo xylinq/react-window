@@ -47,10 +47,12 @@ export default function() {
             className={styles.Grid}
             columnCount={1000}
             columnWidth={index => columnWidths[index]}
-            height={150}
+            height={500}
             rowCount={1000}
             rowHeight={index => rowHeights[index]}
-            width={300}
+            width={750}
+            stickyColumnCount={1}
+            stickyRowCount={1}
           >
             {Cell}
           </VariableSizeGrid>

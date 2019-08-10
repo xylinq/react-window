@@ -95,6 +95,8 @@ export type Props<T> = {|
   style?: Object,
   useIsScrolling: boolean,
   width: number,
+  stickyColumnCount: number,
+  stickyRowCount: number,
 |};
 
 type State = {|
@@ -144,6 +146,10 @@ const IS_SCROLLING_DEBOUNCE_INTERVAL = 150;
 
 const defaultItemKey = ({ columnIndex, data, rowIndex }) =>
   `${rowIndex}:${columnIndex}`;
+
+const flexStyle = { display: 'flex' };
+const stickyRowsStyle = { position: 'sticky', zIndex: 3, top: 0 };
+const stickyColumnsStyle = { position: 'sticky', zIndex: 2, left: 0 };
 
 // In DEV mode, this Set helps us only log a warning once per component instance.
 // This avoids spamming the console every time a render happens.
@@ -410,17 +416,160 @@ export default function createGridComponent({
         style,
         useIsScrolling,
         width,
+        stickyColumnCount,
+        stickyRowCount,
       } = this.props;
       const { isScrolling } = this.state;
 
-      const [
+      let [
         columnStartIndex,
         columnStopIndex,
       ] = this._getHorizontalRangeToRender();
-      const [rowStartIndex, rowStopIndex] = this._getVerticalRangeToRender();
+      let [rowStartIndex, rowStopIndex] = this._getVerticalRangeToRender();
+
+      columnStartIndex += stickyColumnCount; // 确定非 sticky column 开始位置
+      rowStartIndex += stickyRowCount; // 确定非 sticky row 开始位置
 
       const items = [];
+
       if (columnCount > 0 && rowCount) {
+        // 处理 stikcy rows 以及内部的 stikcy columns
+        const stickyRows = [];
+
+        for (
+          let stickyRowIndex = 0;
+          stickyRowIndex < stickyRowCount;
+          stickyRowIndex++
+        ) {
+          const stickyRowColumns = []; // 每行 sticky row 的 columns
+          const stickyRowStickyColumns = []; // 每行 stikcy row 里的 sticky columns
+
+          for (
+            let stickyColumnIndex = 0;
+            stickyColumnIndex < stickyColumnCount;
+            stickyColumnIndex++
+          ) {
+            stickyRowStickyColumns.push(
+              createElement(children, {
+                columnIndex: stickyColumnIndex,
+                data: itemData,
+                isScrolling: useIsScrolling ? isScrolling : undefined,
+                key: itemKey({
+                  columnIndex: stickyColumnIndex,
+                  data: itemData,
+                  rowIndex: stickyRowIndex,
+                }),
+                rowIndex: stickyRowIndex,
+                style: this._getItemStyle(stickyRowIndex, stickyColumnIndex),
+              })
+            );
+          }
+
+          // 首先添加 sticky columns 到每行的 sticky row
+          stickyRowColumns.push(
+            createElement(
+              'div',
+              {
+                key: `sticky-row-${stickyRowIndex}-sticky-columns`,
+                style: stickyColumnsStyle,
+              },
+              stickyRowStickyColumns
+            )
+          );
+
+          // 接着添加非 stikcy columns 到每行的 sticky row
+          for (
+            let columnIndex = columnStartIndex;
+            columnIndex <= columnStopIndex;
+            columnIndex++
+          ) {
+            stickyRowColumns.push(
+              createElement(children, {
+                columnIndex,
+                data: itemData,
+                isScrolling: useIsScrolling ? isScrolling : undefined,
+                key: itemKey({
+                  columnIndex,
+                  data: itemData,
+                  rowIndex: stickyRowIndex,
+                }),
+                rowIndex: stickyRowIndex,
+                style: this._getItemStyle(stickyRowIndex, columnIndex),
+              })
+            );
+          }
+
+          stickyRows.push(
+            createElement(
+              'div',
+              {
+                key: `sticky-row-${stickyRowIndex}`,
+                style: flexStyle,
+              },
+              stickyRowColumns
+            )
+          );
+        }
+
+        items.push(
+          createElement(
+            'div',
+            {
+              key: 'sticky-rows',
+              style: stickyRowsStyle,
+            },
+            stickyRows
+          )
+        );
+
+        // 处理 sticky columns
+        const stikcyColumns = [];
+
+        for (
+          let stickyColumnIndex = 0;
+          stickyColumnIndex < stickyColumnCount;
+          stickyColumnIndex++
+        ) {
+          for (
+            let rowIndex = rowStartIndex;
+            rowIndex <= rowStopIndex;
+            rowIndex++
+          ) {
+            stikcyColumns.push(
+              createElement(children, {
+                columnIndex: stickyColumnIndex,
+                data: itemData,
+                isScrolling: useIsScrolling ? isScrolling : undefined,
+                key: itemKey({
+                  columnIndex: stickyColumnIndex,
+                  data: itemData,
+                  rowIndex,
+                }),
+                rowIndex,
+                style: this._getItemStyle(rowIndex, stickyColumnIndex),
+              })
+            );
+          }
+        }
+
+        items.push(
+          createElement(
+            'div',
+            {
+              key: 'sticky-columns',
+              style: flexStyle,
+            },
+            createElement(
+              'div',
+              {
+                style: stickyColumnsStyle,
+              },
+              stikcyColumns
+            )
+          )
+        );
+
+        // 处理非 sticky rows & columns
         for (
           let rowIndex = rowStartIndex;
           rowIndex <= rowStopIndex;
@@ -436,7 +585,11 @@ export default function createGridComponent({
                 columnIndex,
                 data: itemData,
                 isScrolling: useIsScrolling ? isScrolling : undefined,
-                key: itemKey({ columnIndex, data: itemData, rowIndex }),
+                key: itemKey({
+                  columnIndex,
+                  data: itemData,
+                  rowIndex,
+                }),
                 rowIndex,
                 style: this._getItemStyle(rowIndex, columnIndex),
               })
