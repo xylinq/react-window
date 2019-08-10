@@ -1,6 +1,6 @@
 {
-  "name": "react-window",
-  "version": "1.8.5",
+  "name": "@weiwenjia/react-window",
+  "version": "1.9.0",
   "description":
     "React components for efficiently rendering large, scrollable lists and tabular data",
   "author":
@@ -12,10 +12,10 @@
   "homepage": "http://react-window.now.sh/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bvaughn/react-window.git"
+    "url": "https://github.com/xylinq/react-window.git"
   },
   "bugs": {
-    "url": "https://github.com/bvaughn/react-window/issues"
+    "url": "https://github.com/xylinq/react-window/issues"
   },
   "engines": {
     "node": ">8.0.0"
